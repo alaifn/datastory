@@ -1,0 +1,510 @@
+---
+title: "Bellabeat Capstone"
+author: "Alaif Naima"
+date: "2023-08-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Bellabeat Case Study**
+
+## **Table of Contents**
+  * Background
+  * Ask
+  * Prepare
+  * Process
+  * Analyze & Share
+  * Conclusion
+  * Recommendations
+
+## **Background**
+
+Bellabeat is a company that manufactures high-tech health focused products for women. They provide a variety of smart devices that accumulate data such as activity minutes, steps, heart rate and sleep. 
+The focus of this study is to analyze the data from their products to gain insight into how consumers use their smart devices and learn to better target their marketing strategy. 
+
+## **Ask**
+
+**Business Task** : Identify potential opportunities for growth and provide recommendations for Bellabeat marketing strategy based on trends in use of the smart devices. 
+
+**Stakeholders**:
+
+* Urška Sršen - Bellabeat cofounder and Chief Creative Officer
+* Sando Mur - Bellabeat cofounder and key member of Bellabeat executive team
+* Bellabeat Marketing Analytics team
+
+## **Prepare**
+
+* *Dataset* : 
+The data source used for our case study is FitBit Fitness Tracker Data. This dataset is stored in Kaggle and was made available through Mobius.
+
+* *Accessibility & Privacy* : 
+The FitBit Fitness Tracker Data is open-source, available in a public domain (Kaggle). FitBit users have consented to submitting their personal tracker data. The users are identified by a unique ID in the data provided to maintain anonymity. 
+
+* *About the data* : 
+The FitBit Fitness Tracker Data contains personal fitness tracker data from 30 FitBit Users. Personal tracker data includes:
+        * Minute-level output for physical activity, heart rate, and sleep monitoring.
+				* It also includes information about daily activity, steps, and heart rate that may be used to analyze user habits.
+				
+* *Data Organization* : Data is organized as CSV files, into several tables focusing on different aspects of the data tracked by FitBit. It is organized in long format because each user (identified by a unique ID) has data in multiple rows corresponding to different activity dates and times. 
+
+    * dailyActivity_merged.csv : daily activity (steps, distance, intensities, calories, activity minutes) over 31 days (33 users)
+    * dailyCalories_merged.csv : daily calories over 31 days (33 users)
+    * dailyIntensities_merged.csv : daily intensity (in minutes and distance) over 31 days (33 users)
+    * dailySteps_merged.csv : daily steps of over 31 days (33 users)
+    * hourlyCalories_merged.csv : hourly calories burned over 31 days (33 users)
+    * hourlyIntensities_merged.csv : hourly intensity total and average over 31 days
+    * hourlySteps_merged.csv : hourly steps over 31 days (33 users)
+    * minuteSleep_merged.csv : sleep logged by minute over 31 days (24 users)
+    * sleepDay_merged.csv : daily sleep log (count of sleeps per day, total minutes asleep, and total time in bed) (24 users)
+    * weightLogInfo_merged.csv : weight tracked by Kg & pounds over 30 days (8 users)
+    * heartrate_seconds_merged.csv : day & time log for heartrate (7 users)
+    * minuteCaloriesNarrow_merged.csv : calories burned every minute over 31 days (33 users), each row is one minute
+    * minuteCaloriesWide_merged.csv : calories burned every minute over 31 days (33 users), each column is one minute
+    * minuteIntensitiesNarrow_merged.csv : intensity by minute over 31 days (33 users), each row is one minute
+    * minuteIntensitiesWide_merged.csv : intensity by minute over 31 days (33 users), each column is one minute
+    * minuteMETsNarrow_merged.csv : ratio of energy used during activity to energy used during rest in minutes
+    * minuteStepsNarrow_merged.csv : steps every minute over 31 days (33 users), each row is one minute
+    * minuteStepsWide_merged.csv : steps every minute over 31 days (33 users), each column is one minute
+  
+    
+* *Data Credibility & Integrity* : 
+A possible limitation to our analysis is the low sample size (30 users). This low sample size could lead to a sampling bias. It is possible that the sample is not representative of the population as a whole.
+
+## **Process**
+
+Due to the size of the data set, I have chosen to complete my analysis in RStudio. After insuring the data's integrity, steps will be taken to clean the data and verify it. 
+
+#### Install the required packages
+
+
+```{r}
+utils::install.packages("tidyverse", repos = "https://mirror.csclub.uwaterloo.ca/CRAN/")
+
+utils::install.packages("janitor", repos = "https://mirror.csclub.uwaterloo.ca/CRAN/")
+
+utils::install.packages("here", repos = "https://mirror.csclub.uwaterloo.ca/CRAN/")
+
+utils::install.packages("ggpubr", repos = "https://mirror.csclub.uwaterloo.ca/CRAN/")
+
+utils::install.packages("skimr", repos = "https://mirror.csclub.uwaterloo.ca/CRAN/")
+
+```
+
+#### Load packages
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(readr)
+library(stringr)
+library(tibble)
+library(janitor)
+library(here)
+library(ggpubr)
+library(skimr)
+library(ggrepel)
+```
+
+#### Import Datasets (FOCUS: Daily Activity, Daily Sleep, Hourly Calories, Hourly Steps, Hourly Intensities)
+
+```{r}
+library(readr)
+daily_activity <- read_csv("Desktop/Fitabase Data 4.12.16-5.12.16/dailyActivity_merged.csv")
+sleep <- read_csv("Desktop/Fitabase Data 4.12.16-5.12.16/sleepDay_merged.csv")
+hourly_calories <- read_csv("Desktop/Fitabase Data 4.12.16-5.12.16/hourlyCalories_merged.csv")
+hourly_steps <- read_csv("Desktop/Fitabase Data 4.12.16-5.12.16/hourlySteps_merged.csv")
+hourly_intensities <- read_csv("Desktop/Fitabase Data 4.12.16-5.12.16/hourlyIntensities_merged.csv")
+```
+
+#### Let's take a look at our datasets
+
+```{r}
+
+View(daily_activity)
+View(sleep)
+View(hourly_calories)
+View(hourly_steps)
+View(hourly_intensities)
+
+```
+
+### **Cleaning & Formatting**
+
+#### Look for duplicates in the datasets
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+sum(duplicated(daily_activity))
+sum(duplicated(sleep))
+sum(duplicated(hourly_calories))
+sum(duplicated(hourly_steps))
+sum(duplicated(hourly_intensities))
+
+daily_activity %>% distinct(Id) %>%  drop_na()
+sleep %>% distinct(Id) %>%  drop_na()
+hourly_calories %>% distinct (Id) %>% drop_na()
+hourly_steps %>% distinct (Id) %>% drop_na()
+hourly_intensities %>% distinct (Id) %>% drop_na()
+```
+
+
+#### Remove duplicates from the sleep data
+
+```{r}
+daily_sleep <- sleep %>% distinct(Id, .keep_all = TRUE)
+```
+
+#### Verify that duplicates have been removed from the sleep data
+
+```{r}
+sum(duplicated(daily_sleep))
+```
+
+#### Clean names 
+
+```{r}
+library(janitor)
+
+clean_names(daily_activity)
+clean_names(daily_sleep)
+clean_names(hourly_calories)
+clean_names(hourly_steps)
+clean_names(hourly_intensities)
+```
+
+#### Fix date & time formats
+
+```{r}
+daily_activity$ActivityDate=as.POSIXct(daily_activity$ActivityDate, format="%m/%d/%Y", tz=Sys.timezone())
+daily_activity$date <- format(daily_activity$ActivityDate, format = "%m/%d/%y")
+
+daily_sleep$SleepDay=as.POSIXct(daily_sleep$SleepDay, format="%m/%d/%Y", tz=Sys.timezone())
+daily_sleep$date <- format(daily_sleep$SleepDay, format = "%m/%d/%y")
+
+hourly_calories$ActivityHour=as.POSIXct(hourly_calories$ActivityHour, format="%m/%d/%Y", tz=Sys.timezone())
+hourly_calories$date <- format(hourly_calories$ActivityHour, format = "%m/%d/%y")
+
+hourly_steps$ActivityHour=as.POSIXct(hourly_steps$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+hourly_steps$time <- format(hourly_steps$ActivityHour, format = "%H:%M:%S")
+hourly_steps$date <- format(hourly_steps$ActivityHour, format= "%m/%d/%y")
+
+hourly_intensities$ActivityHour=as.POSIXct(hourly_intensities$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+hourly_intensities$time <- format(hourly_intensities$ActivityHour, format = "%H:%M:%S")
+hourly_intensities$date <- format(hourly_intensities$ActivityHour, format= "%m/%d/%y")
+
+```
+
+#### Verify the number of users for our datasets
+
+```{r}
+n_distinct(daily_activity$Id)
+n_distinct(daily_sleep$Id)
+n_distinct(hourly_calories$Id)
+n_distinct(hourly_steps$Id)
+n_distinct(hourly_intensities$Id)
+```
+
+We have verified that all our data sets have 33 users, except the sleep data set that has 24 users.
+
+## **Analyze & Visualize**
+
+We will begin our analysis by getting a summary of statistics from the different data sets.
+
+#### Daily Activity Statistics
+
+```{r}
+daily_activity %>% 
+  select(TotalSteps, TotalDistance, SedentaryMinutes, Calories) %>% 
+  summary()
+
+```
+
+From this data set, we can see that:
+    * Mean Steps: 7638
+    * Mean Distance: 5.4 km
+    * Mean Sedentary Minutes: 991.2 min
+    * Mean Calories burned: 2304
+
+#### Activity Minutes per Category Statistics
+
+```{r}
+daily_activity %>% 
+  select(VeryActiveMinutes, FairlyActiveMinutes, LightlyActiveMinutes) %>% 
+  summary ()
+```
+
+#### Calorie Summary Statistics
+
+```{r}
+daily_activity %>% 
+  select(Calories) %>% 
+  summary()
+```
+
+#### Sleep Summary Statistics
+
+```{r}
+daily_sleep %>% 
+  select(TotalSleepRecords, TotalMinutesAsleep, TotalTimeInBed) %>% 
+  summary()
+```
+
+#### Merge Data 
+
+It would be useful for our analysis to merge the daily activity data with the daily sleep data to look for trends between sleep and activity. The 'Id' and 'date' columns can be used to join the data.
+
+```{r}
+merged_data <- merge(daily_sleep, daily_activity, by=c('Id', 'date'))
+
+head(merged_data)
+```
+
+### **Visualization of Data**
+
+```{r}
+library(ggplot2)
+```
+
+#### Steps vs Calories
+
+```{r}
+ggplot(data=daily_activity, mapping=aes(x=TotalSteps, y=Calories)) +
+  geom_point() + geom_smooth() + labs(title= "Total Steps vs. Calories")
+```
+
+Trend: Calories increase as steps increase
+
+#### Total Minutes Asleep vs Total Time in Bed
+
+```{r}
+ggplot(data=daily_sleep, mapping=aes(x=TotalMinutesAsleep, y=TotalTimeInBed))+
+  geom_point()+ geom_smooth() + labs(title="Total Minutes Asleep vs. Total Time in Bed")
+```
+
+Trend: Total minutes asleep increase as total time in bed increase
+
+#### Intensity vs Time
+
+```{r}
+int_new <- hourly_intensities %>% 
+  group_by(time) %>% 
+  drop_na() %>% 
+  summarise(mean_total_int=mean(TotalIntensity))
+
+ggplot(data=int_new, aes(x=time, y=mean_total_int)) +
+  geom_histogram(stat = "identity", fill='darkblue')+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title="Average Total Intensity vs. Time")
+```
+
+Trend: People are at their highest activity intensities between 8am-8pm
+
+#### Steps vs Time
+
+```{r}
+View(hourly_steps)
+
+steps_new <- hourly_steps %>% 
+  group_by(time) %>% 
+  drop_na() %>% 
+  summarise(mean_total_steps=mean(StepTotal))
+
+ggplot(data=steps_new)+ geom_col(mapping=aes(x=time, y=mean_total_steps, fill=mean_total_steps))+
+  scale_fill_gradient(low='pink', high='blue')+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title="Total Steps throughout the day")
+```
+
+Trend: Most steps are taken from 8am-8pm
+
+
+#### Total Minutes Asleep vs Sedentary Minutes
+
+```{r}
+ggplot(data=merged_data, aes(x=TotalMinutesAsleep, y=SedentaryMinutes))+
+  geom_point(color='purple')+ geom_smooth(color='blue')+
+  labs(title="Minutes Asleep vs. Sedentary Minutes")
+```
+
+Trend: As total minutes asleep increases, total sedentary minutes decreases. Therefore, as you sleep better, you are more active or if you are more active, you sleep better.
+
+#### Smart Device Usage
+
+We can look at how often users wore their trackers by categorizing them into "low use", "moderate use", and "high use":
+
+```{r}
+daily_use <- daily_activity %>%
+  group_by(Id) %>%
+  drop_na() %>% 
+  summarise(days_used=sum(n())) %>%
+  mutate(usage = case_when(
+    days_used >= 1 & days_used <= 10 ~ "low use",
+    days_used >= 11 & days_used <= 20 ~ "moderate use", 
+    days_used >= 21 & days_used <= 31 ~ "high use", 
+  ))
+
+View(daily_use)
+
+daily_use %>% 
+  group_by(usage) %>% 
+  summarise(total=n()) %>% 
+  mutate(totals=sum(total)) %>% 
+  group_by(usage) %>% 
+  summarise(total_percent=total/totals) %>% 
+  ggplot(daily_use, mapping=aes(usage, y=total_percent, fill=usage))+
+  geom_col()+scale_y_continuous(labels=scales::percent)+
+  theme(legend.position="none")+
+  labs(title="Device Usage", x=NULL)+
+  theme(legend.position="none", text= element_text(size=20), plot.title=element_text(hjust=0.5))
+
+```
+
+Trend: Majority of tracker usage is categorized as "high use". So many of the users wore the tracker for 21-31 days. 
+
+
+#### Understanding Users based on Activity Levels
+
+```{r}
+data_by_usertype <- daily_activity %>%
+  reframe(
+    user_type = factor(case_when(
+      SedentaryMinutes > mean(SedentaryMinutes) & LightlyActiveMinutes < mean(LightlyActiveMinutes) & FairlyActiveMinutes < mean(FairlyActiveMinutes) & VeryActiveMinutes < mean(VeryActiveMinutes) ~ "Sedentary",
+      SedentaryMinutes < mean(SedentaryMinutes) & LightlyActiveMinutes > mean(LightlyActiveMinutes) & FairlyActiveMinutes < mean(FairlyActiveMinutes) & VeryActiveMinutes < mean(VeryActiveMinutes) ~ "Lightly Active",
+      SedentaryMinutes < mean(SedentaryMinutes) & LightlyActiveMinutes < mean(LightlyActiveMinutes) & FairlyActiveMinutes > mean(FairlyActiveMinutes) & VeryActiveMinutes < mean(VeryActiveMinutes) ~ "Fairly Active",
+      SedentaryMinutes < mean(SedentaryMinutes) & LightlyActiveMinutes < mean(LightlyActiveMinutes) & FairlyActiveMinutes < mean(FairlyActiveMinutes) & VeryActiveMinutes > mean(VeryActiveMinutes) ~ "Very Active",
+    ),levels=c("Sedentary", "Lightly Active", "Fairly Active", "Very Active")), Calories, .group=Id) %>%
+  drop_na()
+```
+
+We have now created a new table based on User Type.
+
+```{r}
+View(data_by_usertype)
+```
+
+Let us take a look at the distribution of user types:
+
+```{r}
+data_by_usertype %>% 
+  group_by(user_type) %>% 
+  summarise(total= n()) %>% 
+  mutate(totals = sum(total)) %>% 
+  group_by(user_type) %>% 
+  summarise(total_percent = total/totals) %>% 
+  ggplot(data_by_usertype, mapping=aes(user_type, y=total_percent, fill=user_type))+
+  geom_col() + scale_y_continuous(labels = scales::percent) +
+  theme(legend.position ="none")+
+  labs(title="User Type Distribution", x=NULL)+
+  theme(legend.position="none", text = element_text(size = 20), plot.title = element_text(hjust=0.5))
+```
+
+Trend: Most users fall into the Sedentary and Lightly Active Categories
+
+#### Calories Burned by User Type
+
+```{r}
+ggplot(data_by_usertype, mapping=aes(user_type, Calories, fill=user_type))+
+  geom_boxplot()+
+  theme(legend.position="none")+
+  labs(title="Calories burned by User Type", x=NULL)
+```
+
+Trend: Most calories burned by the very active users
+
+#### Using Total Steps to Categorize Users
+
+First we will need to find out the daily averages of the users:
+
+```{r}
+daily_avg <- merged_data %>% 
+  group_by(Id) %>% 
+  summarise(mean_daily_steps = mean(TotalSteps), mean_daily_calories= mean(Calories), mean_daily_sleep= mean(TotalMinutesAsleep))
+
+head(daily_avg)
+```
+
+Now we will classify the users by their average daily steps:
+
+```{r}
+usertype_bysteps <- daily_avg %>% 
+  mutate(usertype_bysteps = case_when(mean_daily_steps < 5000 ~ "sedentary", mean_daily_steps >= 5000 & mean_daily_steps < 7499 ~ "lightly active", mean_daily_steps >= 7500 & mean_daily_steps <9999 ~ "fairly active", mean_daily_steps >= 10000 ~ "very active"))
+
+head(usertype_bysteps)
+View(usertype_bysteps)
+```
+
+Time to figure out the percent of user type based on steps:
+
+```{r}
+usertype_step_percent <- usertype_bysteps %>% 
+  group_by(usertype_bysteps) %>% 
+  summarise(total=n()) %>% 
+  mutate(totals = sum(total)) %>% 
+  group_by(usertype_bysteps) %>% 
+  summarise(total_percent= total/totals) %>% 
+  mutate(labels= scales::percent(total_percent))
+
+usertype_step_percent$usertype_bysteps <- factor(usertype_step_percent$usertype_bysteps, levels = c("very active", "fairly active", "lightly active", "sedentary"))
+
+head(usertype_step_percent)
+```
+
+#### Visualization of User Type By Steps
+
+```{r}
+usertype_step_percent %>% 
+  ggplot(aes(x="", y=total_percent, fill=usertype_bysteps)) +
+  geom_bar(stat="identity", width = 1) +
+  coord_polar("y", start=0) +
+  theme_minimal()+
+  theme(axis.title.x=element_blank(), axis.title.y= element_blank(), 
+        panel.border= element_blank(), panel.grid=element_blank(), 
+        axis.ticks=element_blank(), axis.text.x=element_blank(),
+        plot.title = element_text(hjust =0.5, size=14, face ="bold"))+
+  scale_fill_manual(values= c("lightgreen", "lightyellow", "lightblue", "orange")) + 
+  geom_text(aes(label= labels), position=position_stack(vjust = 0.5)) + labs(title="User Type Distribution By Steps")
+```
+
+Trend: Based on average daily steps, users as mainly sedentary or very active.
+
+So, categorizing user by steps and by total active minutes give us different stories. However, both categorizations indicate that a big chunk of users are sedentary.
+
+## **Conclusion**
+
+By providing us with our fitness data, Bellabeat can give us the opportunity to empower ourselves by improving our health.
+
+How our insights can be applied: 
+
+* Steps/Sleep/Activity Notification
+
+  Can encourage user step count by sending notifications to remind them to get up and take a walk throughout the day. Increased steps was shown to be correlated with increased calories burned
+
+  Allow them to set alarm and a notification sent to help them to get to bed on time so they are well rested. People who sleep a healthy amount (approx. 8 hours), are less sedentary.
+
+  Increased activity minutes was correlated with increased calories burned. 
+
+* Challenges and Competitions to encourage users to get more active: 
+	   
+	    * Ex. Challenge: getting to 10,000 steps in a day
+	   
+	    * Ex. Competition : between friends, co-workers, family to increase activity minutes and distance traveled.
+
+    As our analysis showed that a big percentage of tracker users are sedentary, we need to look for ways to increase their motivation to get active and get healthy. 
+
+## **Recommendations**
+    
+According to the analysis, it would be most strategic to focus marketing on individuals who are interested in improving their overall health, achieving weight loss, and getting better quality sleep. 
+In future case studies, it may be possible to use Bellabeat's own data, as well as FitBit data from a bigger sample size to get a more thorough analysis. 
+
+
+
+
+
